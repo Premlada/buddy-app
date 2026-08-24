@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin - จับคู่บัดดี้</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-6 max-w-lg mx-auto">
+  
+  <h1 class="text-xl font-bold text-indigo-400 mb-4">⚙️ Admin Control: จับคู่บัดดี้</h1>
+
+  <div class="bg-slate-800 p-4 rounded-xl border border-slate-700 space-y-4 mb-6">
+    <div>
+      <label class="block text-xs font-semibold mb-1 text-amber-400">1. คนที่เป็น "Budder" (คนดูแล):</label>
+      <select id="budderSelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm"></select>
+    </div>
+
+    <div class="text-center font-bold text-indigo-400">⬇️ เป็นคนดูแลให้ ⬇️</div>
+
+    <div>
+      <label class="block text-xs font-semibold mb-1 text-emerald-400">2. คนที่เป็น "Buddy" (คนถูกดูแล):</label>
+      <select id="buddySelect" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-sm"></select>
+    </div>
+
+    <button onclick="saveMatch()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-lg transition text-sm">
+      💾 บันทึกการจับคู่นี้
+    </button>
+  </div>
+
+  <h2 class="font-bold text-sm text-slate-400 mb-2">รายการที่จับคู่แล้วในระบบ:</h2>
+  <div id="matchList" class="space-y-2 text-xs"></div>
+
+  <script>
+    const SUPABASE_URL = 'https://sisvghyvuzgbfjkapsuy.supabase.co/rest/v1/';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpc3ZnaHl2dXpnYmZqa2Fwc3V5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NTA1MjAsImV4cCI6MjEwMzEyNjUyMH0.bmfpLQmzDSPSPwrFyCN-Sa30tgZhE3UkmxLWDWTb9jI';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function init() {
+      // ดึงรายชื่อนิสิตทั้งหมดมาใส่ใน Dropdown
+      const { data: users } = await supabaseClient.from('users').select('*');
+      
+      const budderSelect = document.getElementById('budderSelect');
+      const buddySelect = document.getElementById('buddySelect');
+
+      budderSelect.innerHTML = '<option value="">-- เลือกบัดเดอร์ --</option>';
+      buddySelect.innerHTML = '<option value="">-- เลือกบัดดี้ --</option>';
+
+      users.forEach(u => {
+        const option1 = `<option value="${u.student_id}">${u.full_name} (${u.student_id})</option>`;
+        const option2 = `<option value="${u.student_id}">${u.full_name} (${u.student_id})</option>`;
+        budderSelect.innerHTML += option1;
+        buddySelect.innerHTML += option2;
+      });
+
+      loadCurrentMatches();
+    }
+
+    async function saveMatch() {
+      const budderId = document.getElementById('budderSelect').value;
+      const buddyId = document.getElementById('buddySelect').value;
+
+      if (!budderId || !buddyId) {
+        alert('กรุณาเลือกนิสิตให้ครบทั้งสองฝั่ง');
+        return;
+      }
+
+      if (budderId === buddyId) {
+        alert('ไม่สามารถจับคู่คนเดียวกันเองได้');
+        return;
+      }
+
+      // บันทึกลงตาราง matches
+      const { error } = await supabaseClient.from('matches').insert([
+        { budder_id: budderId, buddy_id: buddyId }
+      ]);
+
+      if (error) {
+        alert('เกิดข้อผิดพลาด หรือ คู่นี้ถูกจับคู่ไปแล้ว');
+      } else {
+        alert('บันทึกสำเร็จ!');
+        loadCurrentMatches();
+      }
+    }
+
+    async function loadCurrentMatches() {
+      const { data: matches } = await supabaseClient.from('matches').select('*');
+      const matchList = document.getElementById('matchList');
+      matchList.innerHTML = '';
+
+      if (!matches || matches.length === 0) {
+        matchList.innerHTML = '<p class="text-slate-500">ยังไม่มีการจับคู่</p>';
+        return;
+      }
+
+      matches.forEach(m => {
+        matchList.innerHTML += `
+          <div class="bg-slate-800 p-2.5 rounded border border-slate-700 flex justify-between">
+            <span>🕵️ ${m.budder_id} ➔ 🎯 ${m.buddy_id}</span>
+          </div>
+        `;
+      });
+    }
+
+    init();
+  </script>
+</body>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>เข้าสู่ระบบ - Buddy Secret</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
+
+  <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700 w-full max-w-sm">
+    <h1 class="text-2xl font-bold text-center text-indigo-400 mb-2">🕵️‍♂️ Buddy Secret</h1>
+    <p class="text-xs text-slate-400 text-center mb-6">กรอกรหัสนิสิตและชื่อจริงเพื่อเข้าสู่ระบบ</p>
+
+    <div class="space-y-4">
+      <div>
+        <label class="block text-xs font-semibold mb-1 text-slate-300">รหัสนิสิต</label>
+        <input type="text" id="studentId" placeholder="เช่น 6630000021" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <div>
+        <label class="block text-xs font-semibold mb-1 text-slate-300">ชื่อ-นามสกุลจริง</label>
+        <input type="text" id="fullName" placeholder="เช่น สมชาย ใจดี" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500">
+      </div>
+
+      <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-lg transition text-sm mt-2">
+        เข้าสู่ระบบ
+      </button>
+
+      <p id="errorMsg" class="text-rose-400 text-xs text-center hidden"></p>
+    </div>
+  </div>
+
+  <script>
+    // 🔴 อย่าลืมเอาค่าวางตรงนี้ครับ
+    const SUPABASE_URL = 'https://sisvghyvuzgbfjkapsuy.supabase.co/rest/v1/';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpc3ZnaHl2dXpnYmZqa2Fwc3V5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NTA1MjAsImV4cCI6MjEwMzEyNjUyMH0.bmfpLQmzDSPSPwrFyCN-Sa30tgZhE3UkmxLWDWTb9jI';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    async function login() {
+      const studentId = document.getElementById('studentId').value.trim();
+      const fullName = document.getElementById('fullName').value.trim();
+      const errorMsg = document.getElementById('errorMsg');
+
+      errorMsg.classList.add('hidden');
+
+      if (!studentId || !fullName) {
+        errorMsg.innerText = 'กรุณากรอกข้อมูลให้ครบถ้วน';
+        errorMsg.classList.remove('hidden');
+        return;
+      }
+
+      // ค้นหาในตาราง users ว่าข้อมูลตรงกันไหม
+      const { data, error } = await supabaseClient
+        .from('users')
+        .select('*')
+        .eq('student_id', studentId)
+        .eq('full_name', fullName)
+        .single();
+
+      if (error || !data) {
+        errorMsg.innerText = 'ไม่พบข้อมูลนิสิต หรือ ชื่อกับรหัสไม่ตรงกัน';
+        errorMsg.classList.remove('hidden');
+      } else {
+        // บันทึกรหัสนิสิตไว้ในเบราว์เซอร์แล้วย้ายไปหน้า Dashboard
+        localStorage.setItem('user_student_id', data.student_id);
+        localStorage.setItem('user_full_name', data.full_name);
+        window.location.href = 'dashboard.html';
+      }
+    }
+  </script>
+</body>
+</html>

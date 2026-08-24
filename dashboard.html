@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - Buddy Secret</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen p-4 max-w-md mx-auto flex flex-col justify-between">
+  
+  <div>
+    <!-- Header -->
+    <header class="border-b border-slate-700 pb-3 mb-6 flex justify-between items-center">
+      <div>
+        <h1 class="font-bold text-lg text-indigo-400">ระบบบัดดี้ในรุ่น</h1>
+        <p id="myInfo" class="text-xs text-slate-400">กำลังโหลดข้อมูล...</p>
+      </div>
+      <button onclick="logout()" class="text-xs bg-slate-800 text-slate-400 px-3 py-1.5 rounded-lg border border-slate-700 hover:text-white">ออกจากระบบ</button>
+    </header>
+
+    <!-- Main Content -->
+    <main class="space-y-4">
+      
+      <!-- Section 1: บัดดี้ของคุณ (คนที่คุณดูแล - เห็นชื่อจริง) -->
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-emerald-400 uppercase tracking-wider">🎯 บัดดี้ที่คุณต้องดูแล</span>
+          <span class="text-xs bg-emerald-950 text-emerald-300 px-2 py-0.5 rounded">เห็นชื่อจริง</span>
+        </div>
+        <div class="flex items-center gap-3 bg-slate-900/60 p-3 rounded-lg border border-slate-700/50">
+          <div class="w-10 h-10 rounded-full bg-emerald-600 flex items-center justify-center font-bold text-lg">🎯</div>
+          <div>
+            <h2 id="buddyName" class="font-bold text-base text-white">ยังไม่มีข้อมูล</h2>
+            <p id="buddyId" class="text-xs text-slate-400">-</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Section 2: บัดเดอร์ของคุณ (คนที่ดูแลคุณ - นามสมมุติ) -->
+      <div class="bg-slate-800 p-4 rounded-xl border border-slate-700">
+        <div class="flex items-center justify-between mb-2">
+          <span class="text-xs font-semibold text-amber-400 uppercase tracking-wider">🕵️‍♂️ Budder ที่ดูแลคุณ</span>
+          <span class="text-xs bg-amber-950 text-amber-300 px-2 py-0.5 rounded">นามสมมุติ</span>
+        </div>
+        <div class="flex items-center gap-3 bg-slate-900/60 p-3 rounded-lg border border-slate-700/50">
+          <div class="w-10 h-10 rounded-full bg-amber-600 flex items-center justify-center font-bold text-lg">?</div>
+          <div>
+            <h2 id="budderCodename" class="font-bold text-base text-white">ยังไม่มีข้อมูล</h2>
+            <p class="text-xs text-slate-400">คอยดูการเคลื่อนไหวดีๆ นะ!</p>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <footer class="text-center text-xs text-slate-500 py-4">
+    Buddy System Platform
+  </footer>
+
+  <script>
+    const SUPABASE_URL = 'https://sisvghyvuzgbfjkapsuy.supabase.co/rest/v1/';
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpc3ZnaHl2dXpnYmZqa2Fwc3V5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NTA1MjAsImV4cCI6MjEwMzEyNjUyMH0.bmfpLQmzDSPSPwrFyCN-Sa30tgZhE3UkmxLWDWTb9jI';
+    const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    const myStudentId = localStorage.getItem('user_student_id');
+    const myFullName = localStorage.getItem('user_full_name');
+
+    if (!myStudentId) {
+      window.location.href = 'index.html';
+    } else {
+      document.getElementById('myInfo').innerText = `${myFullName} (${myStudentId})`;
+      loadMatchData();
+    }
+
+    async function loadMatchData() {
+      // 1. หาบัดดี้ที่เราต้องดูแล (เราคือ budder_id) -> ต้องแสดงชื่อจริงของคนที่เป็น buddy_id
+      const { data: buddyData } = await supabaseClient
+        .from('matches')
+        .select('buddy_id')
+        .eq('budder_id', myStudentId)
+        .maybeSingle();
+
+      if (buddyData) {
+        const { data: buddyUser } = await supabaseClient
+          .from('users')
+          .select('full_name, student_id')
+          .eq('student_id', buddyData.buddy_id)
+          .single();
+
+        if (buddyUser) {
+          document.getElementById('buddyName').innerText = buddyUser.full_name;
+          document.getElementById('buddyId').innerText = `รหัสนิสิต: ${buddyUser.student_id}`;
+        }
+      }
+
+      // 2. หาบัดเดอร์ที่ดูแลเรา (เราคือ buddy_id) -> ต้องแสดงนามสมมุติ (codename) ของคนที่เป็น budder_id
+      const { data: budderData } = await supabaseClient
+        .from('matches')
+        .select('budder_id')
+        .eq('buddy_id', myStudentId)
+        .maybeSingle();
+
+      if (budderData) {
+        const { data: budderUser } = await supabaseClient
+          .from('users')
+          .select('codename')
+          .eq('student_id', budderData.budder_id)
+          .single();
+
+        if (budderUser) {
+          document.getElementById('budderCodename').innerText = budderUser.codename || 'Budder ลับของคุณ';
+        }
+      }
+    }
+
+    function logout() {
+      localStorage.clear();
+      window.location.href = 'index.html';
+    }
+  </script>
+</body>
+</html>
