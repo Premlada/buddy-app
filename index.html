@@ -1,70 +1,264 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>เข้าสู่ระบบ - Buddy Secret</title>
+  <title>SKE BUDDY 24 - Portal Access</title>
+  
+  <!-- Google Fonts: Syne & Chakra Petch -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS & Supabase -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    body {
+      font-family: 'Chakra Petch', sans-serif;
+      background-color: #06040a;
+      min-height: 100vh;
+      overflow: hidden;
+    }
+    
+    .syne-font {
+      font-family: 'Syne', sans-serif;
+    }
+
+    /* ⚡️ โลโก้ Holo Chrome ปล่อยแสงชมพู-ม่วง-ฟ้า */
+    .chrome-title-pink {
+      font-family: 'Syne', sans-serif;
+      background: linear-gradient(135deg, #ffffff 0%, #ff80bf 45%, #00f0ff 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0px 0px 18px rgba(255, 0, 128, 0.5));
+      letter-spacing: -1px;
+    }
+
+    /* 💎 กระจกคริสตัลรมดำ ละมุน สายตา */
+    .glass-card-cyber {
+      background: rgba(16, 10, 26, 0.75);
+      backdrop-filter: blur(25px);
+      -webkit-backdrop-filter: blur(25px);
+      border: 1px solid rgba(255, 105, 180, 0.25);
+      box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.7),
+        inset 0 0 15px rgba(255, 0, 128, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* อนิเมชันแสงเลเซอร์พาดผ่านบางๆ สบายตา */
+    .glass-card-cyber::before {
+      content: '';
+      position: absolute;
+      top: -50%;
+      left: -50%;
+      width: 200%;
+      height: 200%;
+      background: linear-gradient(
+        45deg,
+        transparent 46%,
+        rgba(255, 0, 128, 0.12) 50%,
+        transparent 54%
+      );
+      animation: lightPass 6s infinite ease-in-out;
+      pointer-events: none;
+    }
+
+    @keyframes lightPass {
+      0% { transform: translate(-30%, -30%) rotate(0deg); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translate(30%, 30%) rotate(0deg); opacity: 0; }
+    }
+
+    /* 🌊 Fluid Mesh Background - คลื่นแสงไหลสมูทต่อเนื่อง 100% */
+    .fluid-bg {
+      position: absolute;
+      width: 150%;
+      height: 150%;
+      top: -25%;
+      left: -25%;
+      background: radial-gradient(circle at 30% 30%, rgba(255, 0, 128, 0.22), transparent 45%),
+                  radial-gradient(circle at 70% 60%, rgba(99, 102, 241, 0.22), transparent 45%),
+                  radial-gradient(circle at 40% 80%, rgba(6, 182, 212, 0.2), transparent 45%);
+      filter: blur(60px);
+      animation: fluidMove 16s infinite alternate ease-in-out;
+      z-index: 0;
+      pointer-events: none;
+    }
+
+    @keyframes fluidMove {
+      0% { transform: rotate(0deg) scale(1); }
+      50% { transform: rotate(180deg) scale(1.1); }
+      100% { transform: rotate(360deg) scale(1); }
+    }
+
+    /* ✨ Micro Ambient Dust Particle ละอองนุ่มนวล */
+    .dust-particle {
+      position: absolute;
+      background: rgba(255, 255, 255, 0.6);
+      border-radius: 50%;
+      box-shadow: 0 0 6px rgba(255, 128, 191, 0.8);
+      animation: floatUpSlow 8s infinite linear;
+      pointer-events: none;
+    }
+
+    @keyframes floatUpSlow {
+      0% { transform: translateY(0) scale(0.8); opacity: 0; }
+      30% { opacity: 0.6; }
+      80% { opacity: 0.6; }
+      100% { transform: translateY(-80vh) scale(1.2); opacity: 0; }
+    }
+  </style>
 </head>
-<body class="bg-slate-900 text-slate-100 min-h-screen flex items-center justify-center p-4">
 
-  <div class="bg-slate-800 p-6 rounded-2xl shadow-xl border border-slate-700 w-full max-w-sm">
-    <h1 class="text-2xl font-bold text-center text-indigo-400 mb-2">🕵️‍♂️ Buddy Secret</h1>
-    <p class="text-xs text-slate-400 text-center mb-6">กรอกรหัสนิสิตและชื่อจริงเพื่อเข้าสู่ระบบ</p>
+<body class="min-h-screen flex items-center justify-center p-4 relative">
 
-    <div class="space-y-4">
+  <!-- Smooth Fluid Background Wave 🌊 -->
+  <div class="fluid-bg"></div>
+
+  <!-- Soft Ambient Dust Particles ✨ -->
+  <div class="dust-particle w-1.5 h-1.5 left-[15%]" style="bottom: 5%; animation-delay: 0s; animation-duration: 7s;"></div>
+  <div class="dust-particle w-1 h-1 left-[35%]" style="bottom: 10%; animation-delay: 2s; animation-duration: 9s;"></div>
+  <div class="dust-particle w-2 h-2 left-[65%]" style="bottom: 2%; animation-delay: 4s; animation-duration: 6s;"></div>
+  <div class="dust-particle w-1.5 h-1.5 left-[85%]" style="bottom: 15%; animation-delay: 1s; animation-duration: 8s;"></div>
+
+  <!-- Main Portal Card -->
+  <div class="glass-card-cyber p-8 rounded-3xl w-full max-w-sm relative z-10 text-slate-100 border-t border-pink-500/40">
+    
+    <!-- Title Section -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center gap-2 mb-2 bg-pink-950/30 px-3 py-1 rounded-full border border-pink-500/20">
+        <span class="w-1.5 h-1.5 rounded-full bg-pink-500 animate-ping"></span>
+        <span class="text-[10px] tracking-widest text-pink-300/90 font-bold uppercase">Authorized Access Only</span>
+      </div>
+
+      <h1 class="chrome-title-pink text-4xl font-extrabold tracking-tight leading-none uppercase my-2">
+        SKE BUDDY
+      </h1>
+      
+      <div class="flex justify-center items-center gap-2 mt-3">
+        <span class="syne-font text-xs font-bold text-slate-200 bg-white/5 px-3 py-1 rounded-full border border-pink-400/20 tracking-widest shadow-sm">
+          CLASS #24 ✨
+        </span>
+      </div>
+    </div>
+
+    <!-- Form Section -->
+    <form onsubmit="event.preventDefault(); login();" class="space-y-4" autocomplete="off">
       <div>
-        <label class="block text-xs font-semibold mb-1 text-slate-300">รหัสนิสิต</label>
-        <input type="text" id="studentId" placeholder="เช่น 6630000021" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500">
+        <label class="block text-[11px] font-bold mb-1.5 text-pink-300/80 uppercase tracking-widest">
+          Student ID (Last 4 Digits)
+        </label>
+        <input type="text" id="studentId" placeholder="6601" maxlength="4" autocomplete="off"
+          class="w-full bg-slate-950/80 border border-pink-500/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition font-semibold text-white placeholder-slate-600">
       </div>
 
       <div>
-        <label class="block text-xs font-semibold mb-1 text-slate-300">ชื่อ-นามสกุลจริง</label>
-        <input type="text" id="fullName" placeholder="เช่น สมชาย ใจดี" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-3 text-sm focus:outline-none focus:border-indigo-500">
+        <label class="block text-[11px] font-bold mb-1.5 text-pink-300/80 uppercase tracking-widest">
+          Full Name
+        </label>
+        <input type="text" id="fullName" placeholder="Somchai Jaidee" autocomplete="off"
+          class="w-full bg-slate-950/80 border border-pink-500/30 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-pink-500 focus:ring-1 focus:ring-pink-500 transition font-semibold text-white placeholder-slate-600">
       </div>
 
-      <button onclick="login()" class="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-3 rounded-lg transition text-sm mt-2">
-        เข้าสู่ระบบ
+      <!-- Remember Me Checkbox -->
+      <div class="flex items-center text-xs text-slate-400 pt-1">
+        <label class="flex items-center gap-2 cursor-pointer select-none">
+          <input type="checkbox" id="rememberMe" class="rounded border-pink-500/40 bg-slate-950 text-pink-500 focus:ring-0 accent-pink-500">
+          <span>Remember Me</span>
+        </label>
+      </div>
+
+      <!-- Submit Button -->
+      <button type="submit" 
+        class="w-full syne-font bg-gradient-to-r from-pink-500 via-purple-600 to-cyan-500 hover:from-pink-600 hover:to-cyan-600 text-white font-extrabold py-3.5 rounded-xl shadow-lg shadow-pink-500/20 transform active:scale-95 transition text-sm tracking-wider uppercase border border-white/20 mt-2">
+        ENTER PORTAL ➔
       </button>
 
-      <p id="errorMsg" class="text-rose-400 text-xs text-center hidden"></p>
-    </div>
+      <p id="errorMsg" class="text-rose-400 font-semibold text-xs text-center hidden bg-rose-950/60 p-3 rounded-xl border border-rose-800/50"></p>
+    </form>
+
   </div>
 
   <script>
-    // 🔴 อย่าลืมเอาค่าวางตรงนี้ครับ
-    // 🟢 แก้ไข SUPABASE_URL ตัด /rest/v1/ ออกแล้วครับ
     const SUPABASE_URL = 'https://sisvghyvuzgbfjkapsuy.supabase.co';
     const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNpc3ZnaHl2dXpnYmZqa2Fwc3V5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc1NTA1MjAsImV4cCI6MjEwMzEyNjUyMH0.bmfpLQmzDSPSPwrFyCN-Sa30tgZhE3UkmxLWDWTb9jI';
     const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-    
+
+    // เล่นเสียงเมื่อมีการตอบสนองจากผู้ใช้เท่านั้น ป้องกันเบราว์เซอร์บล็อก
+    function playCyberBeep() {
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        
+        const audioCtx = new AudioContext();
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+      } catch (e) {
+        // หากเครื่องไหนไม่รองรับเสียง จะข้ามไปเงียบๆ ไม่แสดงป็อปอัปแจ้งเตือน
+      }
+    }
+
+    window.onload = () => {
+      const savedId = localStorage.getItem('saved_student_id');
+      const savedName = localStorage.getItem('saved_full_name');
+      if (savedId && savedName) {
+        document.getElementById('studentId').value = savedId;
+        document.getElementById('fullName').value = savedName;
+        document.getElementById('rememberMe').checked = true;
+      }
+    };
+
     async function login() {
+      playCyberBeep();
       const studentId = document.getElementById('studentId').value.trim();
       const fullName = document.getElementById('fullName').value.trim();
+      const rememberMe = document.getElementById('rememberMe').checked;
       const errorMsg = document.getElementById('errorMsg');
 
       errorMsg.classList.add('hidden');
 
       if (!studentId || !fullName) {
-        errorMsg.innerText = 'กรุณากรอกข้อมูลให้ครบถ้วน';
+        errorMsg.innerText = 'Please enter your Student ID and Name.';
         errorMsg.classList.remove('hidden');
         return;
       }
 
-      // ค้นหาในตาราง users ว่าข้อมูลตรงกันไหม
       const { data, error } = await supabaseClient
         .from('users')
         .select('*')
-        .eq('student_id', studentId)
+        .like('student_id', `%${studentId}`)
         .eq('full_name', fullName)
-        .single();
+        .maybeSingle();
 
       if (error || !data) {
-        errorMsg.innerText = 'ไม่พบข้อมูลนิสิต หรือ ชื่อกับรหัสไม่ตรงกัน';
+        errorMsg.innerText = 'Access Denied: Record not found.';
         errorMsg.classList.remove('hidden');
       } else {
-        // บันทึกรหัสนิสิตไว้ในเบราว์เซอร์แล้วย้ายไปหน้า Dashboard
+        if (rememberMe) {
+          localStorage.setItem('saved_student_id', studentId);
+          localStorage.setItem('saved_full_name', fullName);
+        } else {
+          localStorage.removeItem('saved_student_id');
+          localStorage.removeItem('saved_full_name');
+        }
+
         localStorage.setItem('user_student_id', data.student_id);
         localStorage.setItem('user_full_name', data.full_name);
         window.location.href = 'dashboard.html';
