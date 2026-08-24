@@ -121,7 +121,7 @@
           </div>
         </div>
 
-        <button onclick="openChatModal()" class="w-full mt-5 syne-font bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-cyan-500/20">
+        <button onclick="openChatModal('to_buddy')" class="w-full mt-5 syne-font bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-cyan-500/20">
           💬 ส่งแชตลับหาบัดดี้
         </button>
       </div>
@@ -144,7 +144,7 @@
           </div>
         </div>
 
-        <button onclick="openChatModal()" class="w-full mt-5 syne-font bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-pink-500/20">
+        <button onclick="openChatModal('from_budder')" class="w-full mt-5 syne-font bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold py-3.5 rounded-xl text-xs uppercase tracking-wider transition shadow-lg shadow-pink-500/20">
           💬 ตอบกลับแชตลับบัดเดอร์
         </button>
       </div>
@@ -185,7 +185,7 @@
         <div class="flex items-center justify-between pb-4 border-b border-white/10">
           <div>
             <h3 class="syne-font text-lg font-bold text-pink-300">ANONYMOUS CHAT</h3>
-            <p class="text-[11px] text-slate-400">ห้องแชตลับประจำรุ่น SKE24</p>
+            <p class="text-[11px] text-slate-400">ห้องแชตลับเฉพาะคุณและคู่บัดดี้</p>
           </div>
           <button onclick="closeChatModal()" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
         </div>
@@ -232,6 +232,7 @@
     const currentUserId = localStorage.getItem('user_student_id');
     const currentUserName = localStorage.getItem('user_full_name');
     let selectedFile = null;
+    let currentChatPartnerId = null; // เก็บ รหัสนิสิต ของคนที่กำลังคุยด้วยใน Modal
 
     if (!currentUserId || !currentUserName) {
       window.location.href = 'index.html';
@@ -248,7 +249,6 @@
 
     // 1. โหลดข้อมูลความสัมพันธ์ Buddy / Budder
     async function loadBuddyRelationships() {
-      // ดึงข้อมูลตัวเราเอง เพื่อดูว่าเราต้องดูแลใคร (buddy_id) และดึงคำใบ้ที่เราตั้งไว้
       const { data: me } = await supabaseClient
         .from('users')
         .select('buddy_id, hint, likes')
@@ -259,7 +259,6 @@
         document.getElementById('myHint').value = me.hint || '';
         document.getElementById('myLikes').value = me.likes || '';
 
-        // หากเรามีบัดดี้ ให้ดึงข้อมูลบัดดี้ที่เราต้องดูแล (เราเห็นชื่อเต็ม!)
         if (me.buddy_id) {
           const { data: targetBuddy } = await supabaseClient
             .from('users')
@@ -278,7 +277,6 @@
         }
       }
 
-      // ดึงข้อมูลคนที่แอบดูแลเราอยู่ (หาคนที่ใส่ buddy_id = รหัสนิสิตเรา)
       const { data: myBudder } = await supabaseClient
         .from('users')
         .select('student_id, hint')
@@ -308,14 +306,38 @@
       }
     }
 
-    // 3. ระบบแชต Anonymous
-    function openChatModal() {
+    // 3. ระบบแชต Anonymous แบบระบุห้องคู่อัตโนมัติ
+    async function openChatModal(chatType) {
+      const { data: me } = await supabaseClient
+        .from('users')
+        .select('buddy_id')
+        .eq('student_id', currentUserId)
+        .single();
+
+      if (chatType === 'to_buddy') {
+        currentChatPartnerId = me?.buddy_id;
+      } else if (chatType === 'from_budder') {
+        const { data: myBudder } = await supabaseClient
+          .from('users')
+          .select('student_id')
+          .eq('buddy_id', currentUserId)
+          .maybeSingle();
+          
+        currentChatPartnerId = myBudder?.student_id;
+      }
+
+      if (!currentChatPartnerId) {
+        alert('ยังไม่มีคู่จับคู่ในระบบ ไม่สามารถส่งแชตได้ครับ');
+        return;
+      }
+
       document.getElementById('chatModal').classList.remove('hidden');
       loadMessages();
     }
 
     function closeChatModal() {
       document.getElementById('chatModal').classList.add('hidden');
+      currentChatPartnerId = null;
     }
 
     function previewSelectedImage(event) {
@@ -338,10 +360,14 @@
     }
 
     async function loadMessages() {
+      if (!currentChatPartnerId) return;
+
       const container = document.getElementById('chatMessages');
+      
       const { data, error } = await supabaseClient
         .from('messages')
         .select('*')
+        .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${currentChatPartnerId}),and(sender_id.eq.${currentChatPartnerId},receiver_id.eq.${currentUserId})`)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -375,7 +401,7 @@
       const content = input.value.trim();
       let imageUrl = null;
 
-      if (!content && !selectedFile) return;
+      if ((!content && !selectedFile) || !currentChatPartnerId) return;
 
       if (selectedFile) {
         const fileName = `${Date.now()}_${selectedFile.name}`;
@@ -396,7 +422,12 @@
       const { error } = await supabaseClient
         .from('messages')
         .insert([
-          { sender_id: currentUserId, content: content, image_url: imageUrl }
+          { 
+            sender_id: currentUserId, 
+            receiver_id: currentChatPartnerId, 
+            content: content, 
+            image_url: imageUrl 
+          }
         ]);
 
       if (!error) {
