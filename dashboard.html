@@ -109,6 +109,7 @@
           <div class="bg-slate-950/70 rounded-2xl p-4 border border-white/5 space-y-2 text-xs">
             <p class="text-slate-300"><strong class="text-cyan-400">คำใบ้ของบัดดี้:</strong> <span id="targetBuddyHint">กำลังโหลด...</span></p>
             <p class="text-slate-300"><strong class="text-pink-400">สิ่งที่ชอบ/แพ้:</strong> <span id="targetBuddyLikes">กำลังโหลด...</span></p>
+            <p class="text-slate-300"><strong class="text-purple-400">💭 โน้ตของบัดดี้:</strong> <span id="targetBuddyNote" class="text-purple-200 italic">ไม่มีโน้ต</span></p>
           </div>
         </div>
 
@@ -117,7 +118,7 @@
         </button>
       </div>
 
-      <!-- 2. YOUR BUDDER (ซ่อนรหัสจริง) -->
+      <!-- 2. YOUR BUDDER (ซ่อนตัวตนจริง) -->
       <div class="glass-card rounded-3xl p-6 border-t border-pink-500/40 relative flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between mb-3">
@@ -132,6 +133,7 @@
 
           <div class="bg-slate-950/70 rounded-2xl p-4 border border-white/5 space-y-2 text-xs">
             <p class="text-slate-300"><strong class="text-pink-400">คำใบ้บัดเดอร์:</strong> <span id="myBudderHint">ยังไม่มีคำใบ้</span></p>
+            <p class="text-slate-300"><strong class="text-purple-400">💭 โน้ตจากบัดเดอร์:</strong> <span id="myBudderNote" class="text-purple-200 italic">ไม่มีโน้ต</span></p>
           </div>
         </div>
 
@@ -147,7 +149,7 @@
       <div class="flex items-center justify-between mb-3">
         <div class="flex items-center gap-2">
           <span class="text-xl">💭</span>
-          <h3 class="syne-font text-lg font-bold text-purple-300">BUDDY NOTE</h3>
+          <h3 class="syne-font text-lg font-bold text-purple-300">BUDDY NOTE (โน้ตสั้นให้บัดดี้และบัดเดอร์เห็น)</h3>
         </div>
       </div>
 
@@ -262,23 +264,22 @@
 
       const { data: me } = await supabaseClient
         .from('users')
-        .select('buddy_id, hint, likes')
+        .select('buddy_id, hint, likes, note')
         .eq('student_id', cleanUserId)
         .maybeSingle();
 
       if (me) {
         if (document.getElementById('myHint')) document.getElementById('myHint').value = me.hint || '';
         if (document.getElementById('myLikes')) document.getElementById('myLikes').value = me.likes || '';
+        if (document.getElementById('myIgNote')) document.getElementById('myIgNote').value = me.note || '';
       }
 
-      const savedNote = localStorage.getItem(`buddy_note_${cleanUserId}`) || '';
-      document.getElementById('myIgNote').value = savedNote;
-
+      // โหลดข้อมูล Buddy
       if (me && me.buddy_id) {
         const cleanBuddyId = String(me.buddy_id).trim();
         const { data: targetBuddy } = await supabaseClient
           .from('users')
-          .select('full_name, student_id, hint, likes')
+          .select('full_name, student_id, hint, likes, note')
           .eq('student_id', cleanBuddyId)
           .maybeSingle();
 
@@ -287,19 +288,23 @@
           document.getElementById('targetBuddyId').innerText = `ID: ${targetBuddy.student_id}`;
           document.getElementById('targetBuddyHint').innerText = targetBuddy.hint || 'ยังไม่กรอกคำใบ้';
           document.getElementById('targetBuddyLikes').innerText = targetBuddy.likes || 'ยังไม่กรอก';
+          document.getElementById('targetBuddyNote').innerText = targetBuddy.note || 'ไม่มีโน้ตในขณะนี้';
         }
       }
 
+      // โหลดข้อมูล Budder
       const { data: myBudder } = await supabaseClient
         .from('users')
-        .select('student_id, hint')
+        .select('student_id, hint, note')
         .eq('buddy_id', cleanUserId)
         .maybeSingle();
 
       if (myBudder) {
         document.getElementById('myBudderHint').innerText = myBudder.hint || 'บัดเดอร์ยังไม่ได้ใส่คำใบ้';
+        document.getElementById('myBudderNote').innerText = myBudder.note || 'ไม่มีโน้ตในขณะนี้';
       } else {
         document.getElementById('myBudderHint').innerText = 'ยังไม่มีคนจับคู่ด้วย';
+        document.getElementById('myBudderNote').innerText = '-';
       }
     }
 
@@ -321,18 +326,38 @@
       }
     }
 
-    function saveNote() {
+    async function saveNote() {
       const note = document.getElementById('myIgNote').value.trim();
       const cleanUserId = String(currentUserId).trim();
-      localStorage.setItem(`buddy_note_${cleanUserId}`, note);
-      alert('บันทึก Buddy Note เรียบร้อยแล้ว! 💭');
+
+      const { error } = await supabaseClient
+        .from('users')
+        .update({ note: note })
+        .eq('student_id', cleanUserId);
+
+      if (!error) {
+        alert('บันทึก Buddy Note เรียบร้อยแล้ว! (ทุกคนเห็นแล้ว) 💭');
+        loadBuddyRelationships();
+      } else {
+        alert('เกิดข้อผิดพลาดในการบันทึกโน้ต: ' + error.message);
+      }
     }
 
-    function deleteNote() {
+    async function deleteNote() {
       const cleanUserId = String(currentUserId).trim();
-      localStorage.removeItem(`buddy_note_${cleanUserId}`);
-      document.getElementById('myIgNote').value = '';
-      alert('ลบ Buddy Note เรียบร้อยแล้ว!');
+
+      const { error } = await supabaseClient
+        .from('users')
+        .update({ note: null })
+        .eq('student_id', cleanUserId);
+
+      if (!error) {
+        document.getElementById('myIgNote').value = '';
+        alert('ลบ Buddy Note เรียบร้อยแล้ว!');
+        loadBuddyRelationships();
+      } else {
+        alert('เกิดข้อผิดพลาด: ' + error.message);
+      }
     }
 
     async function openChatModal(chatType) {
@@ -413,13 +438,14 @@
 
       container.innerHTML = data.map(msg => {
         const isMe = String(msg.sender_id).trim() === cleanUserId;
+        const timeStr = msg.created_at ? new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : '';
         return `
           <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
             <div class="max-w-[80%] p-3 rounded-2xl text-xs ${isMe ? 'bg-pink-600 text-white rounded-br-none' : 'bg-slate-900 border border-pink-500/20 text-slate-200 rounded-bl-none'}">
               ${msg.image_url ? `<img src="${msg.image_url}" class="rounded-lg mb-2 max-h-48 object-cover">` : ''}
               ${msg.content ? `<p>${msg.content}</p>` : ''}
             </div>
-            <span class="text-[9px] text-slate-500 mt-1">${new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
+            ${timeStr ? `<span class="text-[9px] text-slate-500 mt-1">${timeStr}</span>` : ''}
           </div>
         `;
       }).join('');
