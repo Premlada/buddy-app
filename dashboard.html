@@ -27,7 +27,6 @@
       font-family: 'Syne', sans-serif;
     }
 
-    /* ⚡️ โลโก้ Holo Chrome */
     .chrome-text {
       font-family: 'Syne', sans-serif;
       background: linear-gradient(135deg, #ffffff 0%, #ff80bf 45%, #00f0ff 100%);
@@ -36,7 +35,6 @@
       filter: drop-shadow(0px 0px 14px rgba(255, 0, 128, 0.45));
     }
 
-    /* 💎 กระจกคริสตัลรมดำ Cyber-Glass */
     .glass-card {
       background: rgba(16, 10, 26, 0.75);
       backdrop-filter: blur(25px);
@@ -45,7 +43,6 @@
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.7);
     }
 
-    /* 🌊 Fluid Background Wave */
     .fluid-bg {
       position: fixed;
       width: 150vw;
@@ -66,7 +63,6 @@
       100% { transform: rotate(360deg) scale(1.1); }
     }
 
-    /* Custom Scrollbar */
     ::-webkit-scrollbar { width: 6px; }
     ::-webkit-scrollbar-track { background: rgba(15, 23, 42, 0.6); }
     ::-webkit-scrollbar-thumb { background: rgba(255, 105, 180, 0.3); border-radius: 4px; }
@@ -74,7 +70,6 @@
 </head>
 
 <body class="relative min-h-screen pb-16">
-  <!-- Smooth Fluid Background -->
   <div class="fluid-bg"></div>
 
   <div class="relative z-10 max-w-4xl mx-auto px-4 pt-6">
@@ -102,7 +97,7 @@
     <!-- Main Buddy Relationships Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
       
-      <!-- 1. YOUR BUDDY (ที่เราต้องดูแล - เห็นชื่อจริง) -->
+      <!-- 1. YOUR BUDDY (คนที่เราต้องดูแล) -->
       <div class="glass-card rounded-3xl p-6 border-t border-cyan-500/40 relative flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between mb-3">
@@ -126,7 +121,7 @@
         </button>
       </div>
 
-      <!-- 2. YOUR BUDDER (คนที่ดูแลเรา - ซ่อนชื่อจริง) -->
+      <!-- 2. YOUR BUDDER (คนที่ดูแลเรา) -->
       <div class="glass-card rounded-3xl p-6 border-t border-pink-500/40 relative flex flex-col justify-between">
         <div>
           <div class="flex items-center justify-between mb-3">
@@ -181,7 +176,6 @@
     <div id="chatModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
       <div class="glass-card w-full max-w-lg rounded-3xl p-6 border-t border-pink-500/40 relative flex flex-col h-[550px]">
         
-        <!-- Modal Header -->
         <div class="flex items-center justify-between pb-4 border-b border-white/10">
           <div>
             <h3 class="syne-font text-lg font-bold text-pink-300">ANONYMOUS CHAT</h3>
@@ -190,21 +184,17 @@
           <button onclick="closeChatModal()" class="text-slate-400 hover:text-white text-xl font-bold">✕</button>
         </div>
 
-        <!-- Chat Messages Container -->
         <div id="chatMessages" class="flex-1 overflow-y-auto my-4 space-y-3 pr-2">
           <div class="text-center text-xs text-slate-500 py-10">กำลังโหลดข้อความ...</div>
         </div>
 
-        <!-- Chat Input Form -->
         <form onsubmit="event.preventDefault(); sendMessage();" class="mt-auto space-y-2">
-          <!-- Image Preview -->
           <div id="imagePreviewContainer" class="hidden relative inline-block">
             <img id="imagePreview" src="" class="h-16 rounded-lg border border-pink-500/40 object-cover">
             <button type="button" onclick="clearImage()" class="absolute -top-2 -right-2 bg-rose-600 text-white rounded-full w-5 h-5 text-xs flex items-center justify-center">✕</button>
           </div>
 
           <div class="flex items-center gap-2">
-            <!-- Upload Image Button -->
             <label class="cursor-pointer bg-slate-900 border border-pink-500/30 hover:border-pink-500 p-3 rounded-xl text-pink-400 transition">
               📷
               <input type="file" id="imageInput" accept="image/*" class="hidden" onchange="previewSelectedImage(event)">
@@ -232,7 +222,7 @@
     const currentUserId = localStorage.getItem('user_student_id');
     const currentUserName = localStorage.getItem('user_full_name');
     let selectedFile = null;
-    let currentChatPartnerId = null; // เก็บ รหัสนิสิต ของคนที่กำลังคุยด้วยใน Modal
+    let currentChatPartnerId = null; 
 
     if (!currentUserId || !currentUserName) {
       window.location.href = 'index.html';
@@ -247,83 +237,115 @@
       window.location.href = 'index.html';
     }
 
-    // 1. โหลดข้อมูลความสัมพันธ์ Buddy / Budder
+    // 1. โหลดข้อมูลคู่ Buddy & คำใบ้
     async function loadBuddyRelationships() {
-      const { data: me } = await supabaseClient
+      const cleanUserId = String(currentUserId).trim();
+
+      const { data: me, error: meErr } = await supabaseClient
         .from('users')
         .select('buddy_id, hint, likes')
-        .eq('student_id', currentUserId)
-        .single();
+        .eq('student_id', cleanUserId)
+        .maybeSingle();
 
-      if (me) {
-        document.getElementById('myHint').value = me.hint || '';
-        document.getElementById('myLikes').value = me.likes || '';
-
-        if (me.buddy_id) {
-          const { data: targetBuddy } = await supabaseClient
-            .from('users')
-            .select('full_name, student_id, hint, likes')
-            .eq('student_id', me.buddy_id)
-            .single();
-
-          if (targetBuddy) {
-            document.getElementById('targetBuddyName').innerText = targetBuddy.full_name;
-            document.getElementById('targetBuddyId').innerText = `ID: ${targetBuddy.student_id}`;
-            document.getElementById('targetBuddyHint').innerText = targetBuddy.hint || 'ยังไม่กรอกคำใบ้';
-            document.getElementById('targetBuddyLikes').innerText = targetBuddy.likes || 'ยังไม่กรอก';
-          }
-        } else {
-          document.getElementById('targetBuddyName').innerText = 'ยังไม่อนุมัติ / รอจับคู่';
-        }
+      if (meErr) {
+        console.error('Error fetching profile:', meErr);
+        document.getElementById('targetBuddyName').innerText = 'ติดล็อก RLS ใน Supabase';
+        return;
       }
 
+      if (!me) {
+        document.getElementById('targetBuddyName').innerText = 'ไม่พบรหัสนิสิตนี้ในระบบ';
+        return;
+      }
+
+      if (document.getElementById('myHint')) document.getElementById('myHint').value = me.hint || '';
+      if (document.getElementById('myLikes')) document.getElementById('myLikes').value = me.likes || '';
+
+      // ดึงข้อมูล Buddy
+      if (me.buddy_id) {
+        const cleanBuddyId = String(me.buddy_id).trim();
+        const { data: targetBuddy, error: buddyErr } = await supabaseClient
+          .from('users')
+          .select('full_name, student_id, hint, likes')
+          .eq('student_id', cleanBuddyId)
+          .maybeSingle();
+
+        if (targetBuddy) {
+          document.getElementById('targetBuddyName').innerText = targetBuddy.full_name || 'ไม่พบนามระบุ';
+          document.getElementById('targetBuddyId').innerText = `ID: ${targetBuddy.student_id}`;
+          document.getElementById('targetBuddyHint').innerText = targetBuddy.hint || 'ยังไม่กรอกคำใบ้';
+          document.getElementById('targetBuddyLikes').innerText = targetBuddy.likes || 'ยังไม่กรอก';
+        } else {
+          document.getElementById('targetBuddyName').innerText = `รออัปเดต (ID: ${cleanBuddyId})`;
+          document.getElementById('targetBuddyId').innerText = `ID: ${cleanBuddyId}`;
+          document.getElementById('targetBuddyHint').innerText = '-';
+          document.getElementById('targetBuddyLikes').innerText = '-';
+        }
+      } else {
+        document.getElementById('targetBuddyName').innerText = 'ยังไม่อนุมัติ / รอจับคู่';
+        document.getElementById('targetBuddyId').innerText = 'ID: ----';
+        document.getElementById('targetBuddyHint').innerText = '-';
+        document.getElementById('targetBuddyLikes').innerText = '-';
+      }
+
+      // ดึงข้อมูล Budder
       const { data: myBudder } = await supabaseClient
         .from('users')
         .select('student_id, hint')
-        .eq('buddy_id', currentUserId)
+        .eq('buddy_id', cleanUserId)
         .maybeSingle();
 
       if (myBudder) {
         document.getElementById('myBudderAlias').innerText = `🕵️ Budder #${myBudder.student_id}`;
         document.getElementById('myBudderHint').innerText = myBudder.hint || 'บัดเดอร์ยังไม่ได้ใส่คำใบ้';
+      } else {
+        document.getElementById('myBudderAlias').innerText = '🕵️ Secret Budder';
+        document.getElementById('myBudderHint').innerText = 'ยังไม่มีคนจับคู่ด้วย';
       }
     }
 
-    // 2. บันทึกคำใบ้ของตัวเองขึ้น Supabase
+    // 2. บันทึกคำใบ้ขึ้น Supabase
     async function saveMyProfile() {
       const hint = document.getElementById('myHint').value.trim();
       const likes = document.getElementById('myLikes').value.trim();
+      const cleanUserId = String(currentUserId).trim();
 
-      const { error } = await supabaseClient
+      const { data, error } = await supabaseClient
         .from('users')
         .update({ hint: hint, likes: likes })
-        .eq('student_id', currentUserId);
+        .eq('student_id', cleanUserId)
+        .select();
 
-      if (!error) {
-        alert('บันทึกคำใบ้เรียบร้อยแล้ว!');
+      if (error) {
+        console.error('Save profile error:', error);
+        alert('เกิดข้อผิดพลาดในการบันทึก: ' + error.message + '\n(โปรดตรวจเช็กสิทธิ์ RLS ใน Supabase)');
+      } else if (!data || data.length === 0) {
+        alert('บันทึกไม่สำเร็จ: ไม่พบนิสิตที่มี รหัส ID นี้ในระบบ');
       } else {
-        alert('เกิดข้อผิดพลาดในการบันทึกข้อมูล');
+        alert('บันทึกคำใบ้เรียบร้อยแล้ว! ✨');
+        loadBuddyRelationships();
       }
     }
 
-    // 3. ระบบแชต Anonymous แบบระบุห้องคู่อัตโนมัติ
+    // 3. ระบบ Anonymous Chat
     async function openChatModal(chatType) {
+      const cleanUserId = String(currentUserId).trim();
       const { data: me } = await supabaseClient
         .from('users')
         .select('buddy_id')
-        .eq('student_id', currentUserId)
+        .eq('student_id', cleanUserId)
         .single();
 
       if (chatType === 'to_buddy') {
-        currentChatPartnerId = me?.buddy_id;
+        currentChatPartnerId = me?.buddy_id ? String(me.buddy_id).trim() : null;
       } else if (chatType === 'from_budder') {
         const { data: myBudder } = await supabaseClient
           .from('users')
           .select('student_id')
-          .eq('buddy_id', currentUserId)
+          .eq('buddy_id', cleanUserId)
           .maybeSingle();
           
-        currentChatPartnerId = myBudder?.student_id;
+        currentChatPartnerId = myBudder?.student_id ? String(myBudder.student_id).trim() : null;
       }
 
       if (!currentChatPartnerId) {
@@ -363,11 +385,13 @@
       if (!currentChatPartnerId) return;
 
       const container = document.getElementById('chatMessages');
-      
+      const cleanUserId = String(currentUserId).trim();
+      const cleanPartnerId = String(currentChatPartnerId).trim();
+
       const { data, error } = await supabaseClient
         .from('messages')
         .select('*')
-        .or(`and(sender_id.eq.${currentUserId},receiver_id.eq.${currentChatPartnerId}),and(sender_id.eq.${currentChatPartnerId},receiver_id.eq.${currentUserId})`)
+        .or(`and(sender_id.eq.${cleanUserId},receiver_id.eq.${cleanPartnerId}),and(sender_id.eq.${cleanPartnerId},receiver_id.eq.${cleanUserId})`)
         .order('created_at', { ascending: true });
 
       if (error) {
@@ -381,7 +405,7 @@
       }
 
       container.innerHTML = data.map(msg => {
-        const isMe = msg.sender_id === currentUserId;
+        const isMe = String(msg.sender_id).trim() === cleanUserId;
         return `
           <div class="flex flex-col ${isMe ? 'items-end' : 'items-start'}">
             <div class="max-w-[80%] p-3 rounded-2xl text-xs ${isMe ? 'bg-pink-600 text-white rounded-br-none' : 'bg-slate-900 border border-pink-500/20 text-slate-200 rounded-bl-none'}">
@@ -400,8 +424,10 @@
       const input = document.getElementById('chatInput');
       const content = input.value.trim();
       let imageUrl = null;
+      const cleanUserId = String(currentUserId).trim();
+      const cleanPartnerId = String(currentChatPartnerId).trim();
 
-      if ((!content && !selectedFile) || !currentChatPartnerId) return;
+      if ((!content && !selectedFile) || !cleanPartnerId) return;
 
       if (selectedFile) {
         const fileName = `${Date.now()}_${selectedFile.name}`;
@@ -423,8 +449,8 @@
         .from('messages')
         .insert([
           { 
-            sender_id: currentUserId, 
-            receiver_id: currentChatPartnerId, 
+            sender_id: cleanUserId, 
+            receiver_id: cleanPartnerId, 
             content: content, 
             image_url: imageUrl 
           }
@@ -434,6 +460,8 @@
         input.value = '';
         clearImage();
         loadMessages();
+      } else {
+        alert('ส่งข้อความไม่สำเร็จ: ' + error.message);
       }
     }
 
