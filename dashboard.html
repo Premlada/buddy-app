@@ -454,7 +454,7 @@
       container.scrollTop = container.scrollHeight;
     }
 
- async function sendMessage() {
+    async function sendMessage() {
       const input = document.getElementById('chatInput');
       const content = input.value.trim();
       let imageUrl = null;
@@ -464,7 +464,6 @@
       if ((!content && !selectedFile) || !cleanPartnerId) return;
 
       if (selectedFile) {
-        // ปรับชื่อไฟล์ให้ไม่มีอักขระพิเศษ
         const fileExt = selectedFile.name.split('.').pop();
         const fileName = `${Date.now()}.${fileExt}`;
 
@@ -478,7 +477,6 @@
           return;
         }
 
-        // ดึง Public URL ให้ถูกต้องตาม Supabase v2 Syntax
         const { data: publicUrlData } = supabaseClient
           .storage
           .from('chat-images')
@@ -510,7 +508,52 @@
       }
     }
 
-    window.addEventListener('DOMContentLoaded', loadBuddyRelationships);
+    // ฟังก์ชันฟังการแจ้งเตือนแบบ Realtime (Pop-up หน้าจออย่างเดียว ไม่มีเสียง)
+    function subscribeToNewMessages() {
+      const cleanUserId = String(currentUserId).trim();
+
+      supabaseClient
+        .channel('realtime_messages')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `receiver_id=eq.${cleanUserId}`
+          },
+          (payload) => {
+            const newMsg = payload.new;
+
+            // 1. ถ้าเปิดหน้าต่างแชตคุยกับคนนั้นอยู่ ให้ข้อความใหม่เด้งขึ้นในแชตทันที
+            if (currentChatPartnerId && String(newMsg.sender_id).trim() === String(currentChatPartnerId).trim()) {
+              loadMessages();
+            }
+
+            // 2. เด้ง Pop-up Notification ของเบราว์เซอร์
+            if (Notification.permission === 'granted') {
+              new Notification('💬 มีข้อความใหม่เข้ามา!', {
+                body: newMsg.content ? newMsg.content : '📷 ได้รับรูปภาพใหม่',
+                icon: 'https://cdn-icons-png.flaticon.com/512/732/732200.png'
+              });
+            }
+          }
+        )
+        .subscribe();
+    }
+
+    // ฟังก์ชันขออนุญาตแจ้งเตือนบนเบราว์เซอร์
+    function requestNotificationPermission() {
+      if ('Notification' in window && Notification.permission === 'default') {
+        Notification.requestPermission();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      loadBuddyRelationships();
+      subscribeToNewMessages();
+      requestNotificationPermission();
+    });
   </script>
 </body>
 </html>
